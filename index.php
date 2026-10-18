@@ -11,7 +11,13 @@
     <?= $menu->render() ?>
     <main>
         <h1>Taller PHP con POO</h1>
-        <p>Seleccione una aplicación en el menú.</p>
+        <p>Seleccione una de las aplicaciones:</p>
+        <div class="tarjetas">
+            <?php foreach ($menu->getOpciones() as $carpeta => $titulo): ?>
+                <a class="tarjeta" href="<?= $carpeta ?>/index.php"><?= $titulo ?></a>
+            <?php endforeach; ?>
+        </div>
     </main>
+    <footer>Siete aplicaciones con HTML, CSS, PHP y POO</footer>
 </body>
 </html>

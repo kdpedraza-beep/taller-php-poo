@@ -20,5 +20,9 @@ class Menu
         }
         return $html . '</ul></nav>';
     }
+        public function getOpciones(): array
+    {
+        return $this->opciones;
+    }
 }
 
