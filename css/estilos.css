@@ -1,11 +1,11 @@
 :root {
-    --fondo: #fff6ec;
-    --tarjeta: #ffffff;
-    --texto: #4a2c2a;
-    --primario: #c8553d;
-    --primario-oscuro: #9e3f2b;
-    --acento: #f2a541;
-    --suave: #ffe3c8;
+    --fondo: #dac0d3;
+    --tarjeta: #f0d1ee;
+    --texto: #5f0763;
+    --primario: #e793e8;
+    --primario-oscuro: #281237;
+    --acento: #c3bbe6;
+    --suave: #5b116a;
 }
 
 * { box-sizing: border-box; }
