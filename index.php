@@ -18,6 +18,5 @@
             <?php endforeach; ?>
         </div>
     </main>
-    <footer>Siete aplicaciones con HTML, CSS, PHP y POO</footer>
 </body>
 </html>
