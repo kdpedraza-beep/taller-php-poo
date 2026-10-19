@@ -33,7 +33,7 @@ class Conjuntos
         return $this->b;
     }
 
-    // Unión: todos los elementos de A y de B
+    // Unión A y de B
     public function union(): array
     {
         return $this->sinRepetidos(array_merge($this->a, $this->b));
