@@ -83,7 +83,7 @@ button:hover { background: var(--primario-oscuro); }
 }
 .tarjeta:hover { transform: translateY(-3px); background: var(--suave); }
 
-footer { text-align: center; padding: 24px; color: var(--primario-oscuro); font-size: 0.9rem; }}
+footer { text-align: center; padding: 24px; color: var(--primario-oscuro); font-size: 0.9rem; }
 .historial {
     background: var(--tarjeta);
     padding: 16px 16px 16px 36px;
