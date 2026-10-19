@@ -1,11 +1,11 @@
 :root {
     --fondo: #dac0d3;
     --tarjeta: #f0d1ee;
-    --texto: #5f0763;
+    --texto: #260428;
     --primario: #e793e8;
     --primario-oscuro: #281237;
     --acento: #c3bbe6;
-    --suave: #5b116a;
+    --suave: #bf62d1;
 }
 
 * { box-sizing: border-box; }
