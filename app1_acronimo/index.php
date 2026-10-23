@@ -4,12 +4,13 @@ require_once 'Acronimo.php';
 
 $menu = new Menu();
 $frase = '';
-$resultado = null;
+$resultado = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $frase = trim($_POST['frase'] ?? '');
-    if ($frase !== '') {
-        $resultado = (new Acronimo($frase))->generar();
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (!empty($_POST['frase'])) {
+        $frase = $_POST['frase'];
+        $acronimo = new Acronimo($frase);
+        $resultado = $acronimo->generar();
     }
 }
 ?>
@@ -22,21 +23,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../css/estilos.css">
 </head>
 <body>
-    <?= $menu->render('../') ?>
+    <?php echo $menu->render('../'); ?>
     <main>
         <h1>Convertir una frase en acrónimo</h1>
-        <form method="post">
+        <form action="index.php" method="post">
             <label for="frase">Frase:</label><br>
-            <input type="text" id="frase" name="frase" size="50"
-                   value="<?= htmlspecialchars($frase) ?>" required><br>
+            <input type="text" id="frase" name="frase" size="50" value="<?php echo htmlspecialchars($frase); ?>" required><br>
             <button type="submit">Convertir</button>
         </form>
 
-        <?php if ($resultado !== null): ?>
-            <div class="resultado">
-                Acrónimo: <strong><?= htmlspecialchars($resultado) ?></strong>
-            </div>
-        <?php endif; ?>
+        <?php
+        if ($resultado != '') {
+            echo '<div class="resultado">Acrónimo: <strong>' . htmlspecialchars($resultado) . '</strong></div>';
+        }
+        ?>
     </main>
 </body>
 </html>

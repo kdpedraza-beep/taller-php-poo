@@ -8,20 +8,48 @@ class Acronimo
         $this->frase = $frase;
     }
 
+    // Devuelve true si la letra es un signo de puntuación
+    private function esSigno(string $letra): bool
+    {
+        switch ($letra) {
+            case '.':
+            case ',':
+            case ';':
+            case ':':
+            case '!':
+            case '?':
+            case '¡':
+            case '¿':
+            case "'":
+            case '"':
+            case '(':
+            case ')':
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public function generar(): string
     {
-        // Los guiones se tratan como separadores de palabras
-        $texto = str_replace('-', ' ', $this->frase);
-
-        // Se eliminan los demás signos de puntuación
-        $texto = preg_replace('/[^\p{L}\p{N}\s]/u', '', $texto);
-
-        $palabras = preg_split('/\s+/u', trim($texto), -1, PREG_SPLIT_NO_EMPTY);
-
         $acronimo = '';
-        foreach ($palabras as $palabra) {
-            $acronimo .= mb_strtoupper(mb_substr($palabra, 0, 1));
+        $nuevaPalabra = true; 
+        $total = mb_strlen($this->frase);
+
+        for ($i = 0; $i < $total; $i++) {
+            $letra = mb_substr($this->frase, $i, 1);
+
+            if ($letra == ' ' || $letra == '-') {
+                
+                $nuevaPalabra = true;
+            } else if ($this->esSigno($letra)) {
+                // Los demás signos se ignoran
+            } else if ($nuevaPalabra) {
+                $acronimo = $acronimo . mb_strtoupper($letra);
+                $nuevaPalabra = false;
+            }
         }
+
         return $acronimo;
     }
 }
