@@ -29,10 +29,4 @@ class Calculadora
     {
         return $this->a / $this->b;
     }
-
-    // A % de B
-    public function porcentaje(): float
-    {
-        return ($this->a * $this->b) / 100;
-    }
 }

@@ -2,104 +2,164 @@
 require_once '../includes/menu.php';
 require_once 'ArbolBinario.php';
 
-// Convierte el texto escrito en una lista de nodos (null si el campo está vacío)
-function leerRecorrido(string $texto): ?array
+// Indica si un valor está dentro de una lista
+function contiene(array $lista, string $valor): bool
 {
-    $partes = preg_split('/[\s,;→]+/u', trim($texto), -1, PREG_SPLIT_NO_EMPTY);
-    if (count($partes) === 0) {
-        return null;
+    foreach ($lista as $elemento) {
+        if ($elemento === $valor) {
+            return true;
+        }
     }
-    return $partes;
+    return false;
 }
 
-// Dos listas tienen los mismos nodos, sin importar el orden
-function mismosNodos(array $x, array $y): bool
+// Indica si dos listas son iguales y en el mismo orden
+function iguales(array $x, array $y): bool
 {
-    sort($x, SORT_STRING);
-    sort($y, SORT_STRING);
-    return $x === $y;
+    if (count($x) != count($y)) {
+        return false;
+    }
+    for ($i = 0; $i < count($x); $i++) {
+        if ($x[$i] !== $y[$i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
-// Dibuja un nodo y sus hijos como lista anidada 
-function dibujar(Nodo $nodo): string
+// Une los elementos de una lista con flechas: A → B → C
+function unir(array $lista): string
 {
-    $html = '<li><span class="nodo">' . htmlspecialchars($nodo->valor) . '</span>';
-
-    if ($nodo->izquierda !== null || $nodo->derecha !== null) {
-        $vacio = '<li><span class="nodo vacio">–</span></li>';
-        $html .= '<ul>';
-        $html .= $nodo->izquierda !== null ? dibujar($nodo->izquierda) : $vacio;
-        $html .= $nodo->derecha !== null ? dibujar($nodo->derecha) : $vacio;
-        $html .= '</ul>';
+    $texto = '';
+    for ($i = 0; $i < count($lista); $i++) {
+        if ($i > 0) {
+            $texto = $texto . ' → ';
+        }
+        $texto = $texto . $lista[$i];
     }
-
-    return $html . '</li>';
+    return $texto;
 }
 
 $menu = new Menu();
-$entradaPre = '';
-$entradaIn = '';
-$entradaPost = '';
+$titulos = ['pre' => 'Preorden', 'in' => 'Inorden', 'post' => 'Postorden'];
+$cantidad = 0;
+$filas = ['pre' => [], 'in' => [], 'post' => []];
 $error = '';
+$mostrarCampos = false;
 $arbol = null;
 $metodo = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $entradaPre = trim($_POST['preorden'] ?? '');
-    $entradaIn = trim($_POST['inorden'] ?? '');
-    $entradaPost = trim($_POST['postorden'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
-    $pre = leerRecorrido($entradaPre);
-    $in = leerRecorrido($entradaIn);
-    $post = leerRecorrido($entradaPost);
+    if (isset($_POST['cantidad'])) {
+        $cantidad = (int) $_POST['cantidad'];
+    }
 
-    if (count(array_filter([$pre, $in, $post])) < 2) {
-        $error = 'Ingrese al menos dos recorridos.';
+    if ($cantidad < 1 || $cantidad > 10) {
+        $error = 'Ingrese una cantidad de nodos entre 1 y 10.';
+        $cantidad = 0;
     } else {
-        // Si se ingresan los tres, se usan preorden e inorden
-        if ($pre !== null && $in !== null) {
-            $post = null;
-            $metodo = 'preorden e inorden';
-        } elseif ($post !== null && $in !== null) {
-            $pre = null;
-            $metodo = 'inorden y postorden';
-        } else {
-            $in = null;
-            $metodo = 'preorden y postorden';
-        }
+        $mostrarCampos = true;
 
-        $usados = array_values(array_filter([$pre, $in, $post]));
-
-        $repetidos = false;
-        foreach ($usados as $recorrido) {
-            if (count(array_unique($recorrido)) !== count($recorrido)) {
-                $repetidos = true;
+        // Se leen las tres filas; cada una puede venir completa o vacía
+        $llenos = ['pre' => 0, 'in' => 0, 'post' => 0];
+        foreach ($titulos as $nombre => $titulo) {
+            for ($i = 0; $i < $cantidad; $i++) {
+                $valor = '';
+                if (isset($_POST[$nombre . $i])) {
+                    $valor = trim($_POST[$nombre . $i]);
+                }
+                $filas[$nombre][] = $valor;
+                if ($valor !== '') {
+                    $llenos[$nombre]++;
+                }
             }
         }
 
-        if ($repetidos) {
-            $error = 'Los nodos no se pueden repetir dentro de un recorrido.';
-        } elseif (!mismosNodos($usados[0], $usados[1])) {
-            $error = 'Los recorridos deben tener los mismos nodos.';
-        } else {
-            $arbol = new ArbolBinario();
-            $arbol->construir($pre, $in, $post);
+        // Solo se construye cuando se presiona el botón del segundo formulario
+        if (isset($_POST['construir'])) {
 
-            // Se comprueba que el árbol construido genere los recorridos ingresados
-            $coincide = true;
-            if ($pre !== null && $arbol->preorden() !== $pre) {
-                $coincide = false;
-            }
-            if ($in !== null && $arbol->inorden() !== $in) {
-                $coincide = false;
-            }
-            if ($post !== null && $arbol->postorden() !== $post) {
-                $coincide = false;
+            $completa = [];
+            $totalCompletas = 0;
+            foreach ($titulos as $nombre => $titulo) {
+                $completa[$nombre] = ($llenos[$nombre] == $cantidad);
+                if ($completa[$nombre]) {
+                    $totalCompletas++;
+                }
+                if ($llenos[$nombre] > 0 && $llenos[$nombre] < $cantidad) {
+                    $error = 'Cada recorrido debe estar completo o totalmente vacío.';
+                }
             }
 
-            if (!$coincide) {
-                $error = 'Los recorridos ingresados no corresponden a un mismo árbol.';
-                $arbol = null;
+            if ($error === '' && $totalCompletas < 2) {
+                $error = 'Ingrese al menos dos recorridos completos.';
+            }
+
+            if ($error === '') {
+                // Se eligen los dos recorridos que se van a usar
+                if ($completa['pre'] && $completa['in']) {
+                    $usados = ['pre', 'in'];
+                    $metodo = 'preorden e inorden';
+                } else if ($completa['post'] && $completa['in']) {
+                    $usados = ['post', 'in'];
+                    $metodo = 'postorden e inorden';
+                } else {
+                    $usados = ['pre', 'post'];
+                    $metodo = 'preorden y postorden';
+                }
+
+                $uno = $filas[$usados[0]];
+                $dos = $filas[$usados[1]];
+
+                // Los nodos no se pueden repetir dentro de un recorrido
+                for ($i = 0; $i < $cantidad; $i++) {
+                    for ($j = $i + 1; $j < $cantidad; $j++) {
+                        if ($uno[$i] === $uno[$j] || $dos[$i] === $dos[$j]) {
+                            $error = 'Los nodos no se pueden repetir dentro de un recorrido.';
+                        }
+                    }
+                }
+
+                // Los dos recorridos deben tener los mismos nodos
+                for ($i = 0; $i < $cantidad; $i++) {
+                    if (!contiene($dos, $uno[$i])) {
+                        $error = 'Los recorridos deben tener los mismos nodos.';
+                    }
+                }
+            }
+
+            if ($error === '') {
+                $arbol = new ArbolBinario();
+
+                if ($metodo == 'preorden e inorden') {
+                    $construido = $arbol->desdePreIn($filas['pre'], $filas['in']);
+                } else if ($metodo == 'postorden e inorden') {
+                    $construido = $arbol->desdePostIn($filas['post'], $filas['in']);
+                } else {
+                    $construido = $arbol->desdePrePost($filas['pre'], $filas['post']);
+                }
+
+                // Se comprueba que el árbol construido genere los recorridos ingresados
+                if (!$construido) {
+                    $error = 'Los recorridos ingresados no corresponden a un mismo árbol.';
+                } else {
+                    foreach ($usados as $nombre) {
+                        if ($nombre == 'pre') {
+                            $calculado = $arbol->preorden();
+                        } else if ($nombre == 'in') {
+                            $calculado = $arbol->inorden();
+                        } else {
+                            $calculado = $arbol->postorden();
+                        }
+                        if (!iguales($calculado, $filas[$nombre])) {
+                            $error = 'Los recorridos ingresados no corresponden a un mismo árbol.';
+                        }
+                    }
+                }
+
+                if ($error !== '') {
+                    $arbol = null;
+                }
             }
         }
     }
@@ -114,49 +174,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../css/estilos.css">
 </head>
 <body>
-    <?= $menu->render('../') ?>
+    <?php echo $menu->render('../'); ?>
     <main>
         <h1>Árbol binario a partir de sus recorridos</h1>
-        <form method="post">
-            <p>Ingrese al menos dos recorridos, con los nodos separados por espacios o comas.</p>
 
-            <label for="preorden">Preorden:</label>
-            <input type="text" id="preorden" name="preorden"
-                   placeholder="Ejemplo: A B D E C"
-                   value="<?= htmlspecialchars($entradaPre) ?>">
-
-            <label for="inorden">Inorden:</label>
-            <input type="text" id="inorden" name="inorden"
-                   placeholder="Ejemplo: D B E A C"
-                   value="<?= htmlspecialchars($entradaIn) ?>">
-
-            <label for="postorden">Postorden:</label>
-            <input type="text" id="postorden" name="postorden"
-                   placeholder="Ejemplo: D E B C A"
-                   value="<?= htmlspecialchars($entradaPost) ?>">
-
-            <button type="submit">Construir árbol</button>
+        <form action="index.php" method="post">
+            <label for="cantidad">¿Cuántos nodos tiene el árbol? (1 a 10)</label>
+            <input type="number" id="cantidad" name="cantidad" min="1" max="10" value="<?php if ($cantidad > 0) { echo $cantidad; } ?>" required>
+            <button type="submit">Continuar</button>
         </form>
 
-        <?php if ($error !== ''): ?>
-            <div class="error"><?= $error ?></div>
-        <?php endif; ?>
+        <?php
+        if ($error !== '') {
+            echo '<div class="error">' . $error . '</div>';
+        }
 
-        <?php if ($arbol !== null): ?>
-            <div class="resultado">
-                Árbol construido con: <strong><?= $metodo ?></strong>
-            </div>
+        if ($mostrarCampos) {
+        ?>
+            <form action="index.php" method="post">
+                <input type="hidden" name="cantidad" value="<?php echo $cantidad; ?>">
+                <p>Escriba al menos dos recorridos completos y deje vacío el que no vaya a usar. Si escribe los tres, se usan preorden e inorden.</p>
 
-            <div class="arbol">
-                <ul><?= dibujar($arbol->getRaiz()) ?></ul>
-            </div>
+                <?php
+                foreach ($titulos as $nombre => $titulo) {
+                    echo '<h2>' . $titulo . '</h2>';
+                    echo '<div class="fila-nodos">';
+                    for ($i = 0; $i < $cantidad; $i++) {
+                        $valor = '';
+                        if (isset($filas[$nombre][$i])) {
+                            $valor = $filas[$nombre][$i];
+                        }
+                        echo '<input type="text" name="' . $nombre . $i . '" value="' . htmlspecialchars($valor) . '" maxlength="3">';
+                    }
+                    echo '</div>';
+                }
+                ?>
 
-            <div class="resultado">
-                Preorden: <strong><?= implode(' → ', $arbol->preorden()) ?></strong><br>
-                Inorden: <strong><?= implode(' → ', $arbol->inorden()) ?></strong><br>
-                Postorden: <strong><?= implode(' → ', $arbol->postorden()) ?></strong>
-            </div>
-        <?php endif; ?>
+                <button type="submit" name="construir" value="1">Construir árbol</button>
+            </form>
+        <?php
+        }
+
+        if ($arbol !== null) {
+            $inorden = $arbol->inorden();
+            $niveles = $arbol->niveles();
+
+            // La posición horizontal de cada nodo es su lugar en el inorden
+            $columna = [];
+            $ultimoNivel = 0;
+            for ($i = 0; $i < count($inorden); $i++) {
+                $columna[$inorden[$i]] = $i;
+                if ($niveles[$inorden[$i]] > $ultimoNivel) {
+                    $ultimoNivel = $niveles[$inorden[$i]];
+                }
+            }
+
+            $ancho = count($inorden) * 60 + 20;
+            $alto = ($ultimoNivel + 1) * 70 + 10;
+
+            echo '<div class="resultado">Árbol construido con: <strong>' . $metodo . '</strong></div>';
+
+            echo '<div class="dibujo-arbol">';
+            echo '<svg width="' . $ancho . '" height="' . $alto . '">';
+
+            // Primero las líneas entre cada nodo y sus hijos
+            foreach ($inorden as $nodo) {
+                $x = 40 + $columna[$nodo] * 60;
+                $y = 30 + $niveles[$nodo] * 70;
+
+                $hijos = [$arbol->getIzquierda($nodo), $arbol->getDerecha($nodo)];
+                foreach ($hijos as $hijo) {
+                    if ($hijo !== '') {
+                        $x2 = 40 + $columna[$hijo] * 60;
+                        $y2 = 30 + $niveles[$hijo] * 70;
+                        echo '<line x1="' . $x . '" y1="' . $y . '" x2="' . $x2 . '" y2="' . $y2 . '"></line>';
+                    }
+                }
+            }
+
+            // Después los círculos con el nombre de cada nodo
+            foreach ($inorden as $nodo) {
+                $x = 40 + $columna[$nodo] * 60;
+                $y = 30 + $niveles[$nodo] * 70;
+                echo '<circle cx="' . $x . '" cy="' . $y . '" r="20"></circle>';
+                echo '<text x="' . $x . '" y="' . $y . '" dy="5">' . htmlspecialchars($nodo) . '</text>';
+            }
+
+            echo '</svg>';
+            echo '</div>';
+
+            echo '<div class="resultado">';
+            echo 'Preorden: <strong>' . unir($arbol->preorden()) . '</strong><br>';
+            echo 'Inorden: <strong>' . unir($arbol->inorden()) . '</strong><br>';
+            echo 'Postorden: <strong>' . unir($arbol->postorden()) . '</strong>';
+            echo '</div>';
+        }
+        ?>
     </main>
 </body>
 </html>

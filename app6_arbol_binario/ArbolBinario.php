@@ -1,141 +1,242 @@
 <?php
-require_once 'Nodo.php';
-
 class ArbolBinario
 {
-    private ?Nodo $raiz = null;
+    private string $raiz = '';
+    private array $izquierda = [];   // $izquierda['A'] = 'B' significa que B es hijo izquierdo de A
+    private array $derecha = [];     // igual, para el hijo derecho
 
-    // Usa preorden e inorden si están; si no, el par de recorridos que haya
-    public function construir(?array $pre, ?array $in, ?array $post): void
+    // Agrega un nodo nuevo, todavía sin hijos 
+    private function agregarNodo(string $valor): void
     {
-        if ($pre !== null && $in !== null) {
-            $this->raiz = $this->desdePreIn($pre, $in);
-        } elseif ($post !== null && $in !== null) {
-            $this->raiz = $this->desdePostIn($post, $in);
-        } else {
-            $this->raiz = $this->desdePrePost($pre, $post);
+        $this->izquierda[$valor] = '';
+        $this->derecha[$valor] = '';
+    }
+
+    public function getIzquierda(string $nodo): string
+    {
+        return $this->izquierda[$nodo];
+    }
+
+    public function getDerecha(string $nodo): string
+    {
+        return $this->derecha[$nodo];
+    }
+
+
+
+    private function insertar(array $orden, array $posicion): void
+    {
+        $this->raiz = $orden[0];
+        $this->agregarNodo($orden[0]);
+
+        for ($i = 1; $i < count($orden); $i++) {
+            $nuevo = $orden[$i];
+            $this->agregarNodo($nuevo);
+
+            $actual = $this->raiz;
+            $colocado = false;
+
+            while (!$colocado) {
+                if ($posicion[$nuevo] < $posicion[$actual]) {
+                    if ($this->izquierda[$actual] === '') {
+                        $this->izquierda[$actual] = $nuevo;
+                        $colocado = true;
+                    } else {
+                        $actual = $this->izquierda[$actual];
+                    }
+                } else {
+                    if ($this->derecha[$actual] === '') {
+                        $this->derecha[$actual] = $nuevo;
+                        $colocado = true;
+                    } else {
+                        $actual = $this->derecha[$actual];
+                    }
+                }
+            }
         }
     }
 
-    public function getRaiz(): ?Nodo
+    //el preorden ya pone cada padre antes que sus hijos
+    public function desdePreIn(array $pre, array $in): bool
     {
-        return $this->raiz;
+        $posicion = [];
+        for ($i = 0; $i < count($in); $i++) {
+            $posicion[$in[$i]] = $i;
+        }
+
+        $this->insertar($pre, $posicion);
+        return true;
+    }
+
+    // el postorden leído al revés pone cada padre antes que sus hijos
+    public function desdePostIn(array $post, array $in): bool
+    {
+        $posicion = [];
+        for ($i = 0; $i < count($in); $i++) {
+            $posicion[$in[$i]] = $i;
+        }
+
+        $alReves = [];
+        for ($i = count($post) - 1; $i >= 0; $i--) {
+            $alReves[] = $post[$i];
+        }
+
+        $this->insertar($alReves, $posicion);
+        return true;
+    }
+
+    // Preorden + postorden: solo se obtiene un árbol único si cada nodo tiene 0 o 2 hijos.
+    // La pila guarda los nodos cuyo subárbol todavía no está completo.
+    public function desdePrePost(array $pre, array $post): bool
+    {
+        $this->raiz = $pre[0];
+        $this->agregarNodo($pre[0]);
+
+        $pila = [$pre[0]];
+        $tope = 1;      // cuántos nodos hay en la pila
+        $j = 0;         // posición actual dentro del postorden
+
+        for ($i = 1; $i < count($pre); $i++) {
+            $nuevo = $pre[$i];
+            $this->agregarNodo($nuevo);
+
+            // Un nodo está completo cuando aparece en el postorden: se saca de la pila
+            while ($tope > 0 && $j < count($post) && $pila[$tope - 1] === $post[$j]) {
+                $tope--;
+                $j++;
+            }
+
+            if ($tope == 0) {
+                return false;
+            }
+
+            // El nuevo nodo es hijo del que quedó arriba de la pila
+            $padre = $pila[$tope - 1];
+            if ($this->izquierda[$padre] === '') {
+                $this->izquierda[$padre] = $nuevo;
+            } else if ($this->derecha[$padre] === '') {
+                $this->derecha[$padre] = $nuevo;
+            } else {
+                return false;
+            }
+
+            $pila[$tope] = $nuevo;
+            $tope++;
+        }
+        return true;
     }
 
     
 
-    private function desdePreIn(array $pre, array $in): ?Nodo
-    {
-        if (count($pre) === 0) {
-            return null;
-        }
-
-        // La raíz es el primer elemento del preorden
-        $nodo = new Nodo($pre[0]);
-        $pos = array_search($nodo->valor, $in, true);
-        if ($pos === false) {
-            return $nodo;
-        }
-
-        $inIzq = array_slice($in, 0, $pos);
-        $inDer = array_slice($in, $pos + 1);
-        $cantIzq = count($inIzq);
-
-        $nodo->izquierda = $this->desdePreIn(array_slice($pre, 1, $cantIzq), $inIzq);
-        $nodo->derecha = $this->desdePreIn(array_slice($pre, 1 + $cantIzq), $inDer);
-        return $nodo;
-    }
-
-    private function desdePostIn(array $post, array $in): ?Nodo
-    {
-        if (count($post) === 0) {
-            return null;
-        }
-
-        // La raíz es el último elemento del postorden
-        $nodo = new Nodo($post[count($post) - 1]);
-        $pos = array_search($nodo->valor, $in, true);
-        if ($pos === false) {
-            return $nodo;
-        }
-
-        $inIzq = array_slice($in, 0, $pos);
-        $inDer = array_slice($in, $pos + 1);
-        $cantIzq = count($inIzq);
-
-        $nodo->izquierda = $this->desdePostIn(array_slice($post, 0, $cantIzq), $inIzq);
-        $nodo->derecha = $this->desdePostIn(array_slice($post, $cantIzq, count($inDer)), $inDer);
-        return $nodo;
-    }
-
-    // Supone que cada nodo tiene 0 o 2 hijos
-    private function desdePrePost(array $pre, array $post): ?Nodo
-    {
-        if (count($pre) === 0) {
-            return null;
-        }
-
-        $nodo = new Nodo($pre[0]);
-        if (count($pre) === 1) {
-            return $nodo;
-        }
-
-        // La raíz del lado izquierdo es el segundo elemento del preorden
-        $pos = array_search($pre[1], $post, true);
-        if ($pos === false) {
-            return $nodo;
-        }
-        $cantIzq = $pos + 1;
-
-        $nodo->izquierda = $this->desdePrePost(
-            array_slice($pre, 1, $cantIzq),
-            array_slice($post, 0, $cantIzq)
-        );
-        $nodo->derecha = $this->desdePrePost(
-            array_slice($pre, 1 + $cantIzq),
-            array_slice($post, $cantIzq, count($post) - 1 - $cantIzq)
-        );
-        return $nodo;
-    }
-
-
-
     public function preorden(): array
     {
-        return $this->recorrerPre($this->raiz);
+        $resultado = [];
+        if ($this->raiz === '') {
+            return $resultado;
+        }
+
+        $pila = [$this->raiz];
+        $tope = 1;
+        while ($tope > 0) {
+            $tope--;
+            $nodo = $pila[$tope];
+            $resultado[] = $nodo;
+
+ 
+            if ($this->derecha[$nodo] !== '') {
+                $pila[$tope] = $this->derecha[$nodo];
+                $tope++;
+            }
+            if ($this->izquierda[$nodo] !== '') {
+                $pila[$tope] = $this->izquierda[$nodo];
+                $tope++;
+            }
+        }
+        return $resultado;
     }
 
     public function inorden(): array
     {
-        return $this->recorrerIn($this->raiz);
+        $resultado = [];
+        $pila = [];
+        $tope = 0;
+        $actual = $this->raiz;
+
+        while ($actual !== '' || $tope > 0) {
+            // Se baja por la izquierda guardando el camino
+            while ($actual !== '') {
+                $pila[$tope] = $actual;
+                $tope++;
+                $actual = $this->izquierda[$actual];
+            }
+            $tope--;
+            $actual = $pila[$tope];
+            $resultado[] = $actual;
+            $actual = $this->derecha[$actual];
+        }
+        return $resultado;
     }
 
     public function postorden(): array
     {
-        return $this->recorrerPost($this->raiz);
+        $resultado = [];
+        if ($this->raiz === '') {
+            return $resultado;
+        }
+
+        // derecha izquierda y luego se lee al revés
+        $visitados = [];
+        $pila = [$this->raiz];
+        $tope = 1;
+        while ($tope > 0) {
+            $tope--;
+            $nodo = $pila[$tope];
+            $visitados[] = $nodo;
+
+            if ($this->izquierda[$nodo] !== '') {
+                $pila[$tope] = $this->izquierda[$nodo];
+                $tope++;
+            }
+            if ($this->derecha[$nodo] !== '') {
+                $pila[$tope] = $this->derecha[$nodo];
+                $tope++;
+            }
+        }
+
+        for ($i = count($visitados) - 1; $i >= 0; $i--) {
+            $resultado[] = $visitados[$i];
+        }
+        return $resultado;
     }
 
-    private function recorrerPre(?Nodo $nodo): array
+    // la raíz es 0, sus hijos 1, y así sucesivamente
+    public function niveles(): array
     {
-        if ($nodo === null) {
-            return [];
+        $niveles = [];
+        if ($this->raiz === '') {
+            return $niveles;
         }
-        return array_merge([$nodo->valor], $this->recorrerPre($nodo->izquierda), $this->recorrerPre($nodo->derecha));
-    }
 
-    private function recorrerIn(?Nodo $nodo): array
-    {
-        if ($nodo === null) {
-            return [];
-        }
-        return array_merge($this->recorrerIn($nodo->izquierda), [$nodo->valor], $this->recorrerIn($nodo->derecha));
-    }
+        $pila = [$this->raiz];
+        $profundidad = [0];
+        $tope = 1;
+        while ($tope > 0) {
+            $tope--;
+            $nodo = $pila[$tope];
+            $nivel = $profundidad[$tope];
+            $niveles[$nodo] = $nivel;
 
-    private function recorrerPost(?Nodo $nodo): array
-    {
-        if ($nodo === null) {
-            return [];
+            if ($this->derecha[$nodo] !== '') {
+                $pila[$tope] = $this->derecha[$nodo];
+                $profundidad[$tope] = $nivel + 1;
+                $tope++;
+            }
+            if ($this->izquierda[$nodo] !== '') {
+                $pila[$tope] = $this->izquierda[$nodo];
+                $profundidad[$tope] = $nivel + 1;
+                $tope++;
+            }
         }
-        return array_merge($this->recorrerPost($nodo->izquierda), $this->recorrerPost($nodo->derecha), [$nodo->valor]);
+        return $niveles;
     }
 }
