@@ -6,20 +6,30 @@ class Conjuntos
 
     public function __construct(array $a, array $b)
     {
-        $this->a = $this->sinRepetidos($a);
-        $this->b = $this->sinRepetidos($b);
+        $this->a = $this->quitarRepetidos($a);
+        $this->b = $this->quitarRepetidos($b);
     }
 
-    // Quita los números repetidos y ordena de menor a mayor
-    private function sinRepetidos(array $lista): array
+    // Indica si un número está dentro de una lista
+    private function contiene(array $lista, int $numero): bool
+    {
+        foreach ($lista as $valor) {
+            if ($valor == $numero) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Un conjunto no tiene elementos repetidos
+    private function quitarRepetidos(array $lista): array
     {
         $resultado = [];
         foreach ($lista as $numero) {
-            if (!in_array($numero, $resultado, true)) {
+            if (!$this->contiene($resultado, $numero)) {
                 $resultado[] = $numero;
             }
         }
-        sort($resultado);
         return $resultado;
     }
 
@@ -33,18 +43,24 @@ class Conjuntos
         return $this->b;
     }
 
-    // Unión A y de B
+    // Unión: todos los elementos de A y los de B que no estén en A
     public function union(): array
     {
-        return $this->sinRepetidos(array_merge($this->a, $this->b));
+        $resultado = $this->a;
+        foreach ($this->b as $numero) {
+            if (!$this->contiene($resultado, $numero)) {
+                $resultado[] = $numero;
+            }
+        }
+        return $resultado;
     }
 
-    // Intersección: los elementos que están en A y también en B
+    // Intersección: los elementos de A que también están en B
     public function interseccion(): array
     {
         $resultado = [];
         foreach ($this->a as $numero) {
-            if (in_array($numero, $this->b, true)) {
+            if ($this->contiene($this->b, $numero)) {
                 $resultado[] = $numero;
             }
         }
@@ -56,7 +72,7 @@ class Conjuntos
     {
         $resultado = [];
         foreach ($this->a as $numero) {
-            if (!in_array($numero, $this->b, true)) {
+            if (!$this->contiene($this->b, $numero)) {
                 $resultado[] = $numero;
             }
         }
@@ -68,7 +84,7 @@ class Conjuntos
     {
         $resultado = [];
         foreach ($this->b as $numero) {
-            if (!in_array($numero, $this->a, true)) {
+            if (!$this->contiene($this->a, $numero)) {
                 $resultado[] = $numero;
             }
         }

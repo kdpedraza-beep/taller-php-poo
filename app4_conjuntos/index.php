@@ -2,51 +2,74 @@
 require_once '../includes/menu.php';
 require_once 'Conjuntos.php';
 
-// Convierte el texto escrito en una lista de enteros (null si hay un error)
-function leerEnteros(string $texto): ?array
-{
-    $partes = preg_split('/[\s,;]+/', trim($texto), -1, PREG_SPLIT_NO_EMPTY);
-    if (count($partes) === 0) {
-        return null;
-    }
-
-    $numeros = [];
-    foreach ($partes as $parte) {
-        $valor = filter_var($parte, FILTER_VALIDATE_INT);
-        if ($valor === false) {
-            return null;
-        }
-        $numeros[] = $valor;
-    }
-    return $numeros;
-}
-
-// Muestra un conjunto con llaves
+// Convierte un conjunto en texto
 function mostrar(array $conjunto): string
 {
-    if (count($conjunto) === 0) {
+    if (count($conjunto) == 0) {
         return 'Conjunto vacío';
     }
-    return '{ ' . implode(', ', $conjunto) . ' }';
+
+    $texto = '{ ';
+    for ($i = 0; $i < count($conjunto); $i++) {
+        if ($i > 0) {
+            $texto = $texto . ', ';
+        }
+        $texto = $texto . $conjunto[$i];
+    }
+    return $texto . ' }';
 }
 
 $menu = new Menu();
-$entradaA = '';
-$entradaB = '';
+$cantidadA = 0;
+$cantidadB = 0;
 $error = '';
-$conjuntos = null;
+$mostrarCampos = false;
+$calculado = false;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $entradaA = trim($_POST['conjunto_a'] ?? '');
-    $entradaB = trim($_POST['conjunto_b'] ?? '');
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
-    $listaA = leerEnteros($entradaA);
-    $listaB = leerEnteros($entradaB);
+    if (isset($_POST['cantidadA'])) {
+        $cantidadA = (int) $_POST['cantidadA'];
+    }
+    if (isset($_POST['cantidadB'])) {
+        $cantidadB = (int) $_POST['cantidadB'];
+    }
 
-    if ($listaA === null || $listaB === null) {
-        $error = 'Ingrese solo números enteros, separados por espacios o comas.';
+    if ($cantidadA < 1 || $cantidadA > 10 || $cantidadB < 1 || $cantidadB > 10) {
+        $error = 'Cada conjunto debe tener entre 1 y 10 elementos.';
+        $cantidadA = 0;
+        $cantidadB = 0;
+    } else if (!isset($_POST['a0'])) {
+        //ya se sabe la cantidad, faltan los números
+        $mostrarCampos = true;
     } else {
-        $conjuntos = new Conjuntos($listaA, $listaB);
+        
+        $correcto = true;
+        $listaA = [];
+        $listaB = [];
+
+        for ($i = 0; $i < $cantidadA; $i++) {
+            if (isset($_POST['a' . $i]) && $_POST['a' . $i] !== '' && $_POST['a' . $i] == (int) $_POST['a' . $i]) {
+                $listaA[] = (int) $_POST['a' . $i];
+            } else {
+                $correcto = false;
+            }
+        }
+        for ($i = 0; $i < $cantidadB; $i++) {
+            if (isset($_POST['b' . $i]) && $_POST['b' . $i] !== '' && $_POST['b' . $i] == (int) $_POST['b' . $i]) {
+                $listaB[] = (int) $_POST['b' . $i];
+            } else {
+                $correcto = false;
+            }
+        }
+
+        if ($correcto) {
+            $conjuntos = new Conjuntos($listaA, $listaB);
+            $calculado = true;
+        } else {
+            $error = 'Complete todos los campos con números enteros.';
+            $mostrarCampos = true;
+        }
     }
 }
 ?>
@@ -59,37 +82,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../css/estilos.css">
 </head>
 <body>
-    <?= $menu->render('../') ?>
+    <?php echo $menu->render('../'); ?>
     <main>
         <h1>Operaciones entre conjuntos</h1>
-        <form method="post">
-            <label for="conjunto_a">Conjunto A:</label>
-            <input type="text" id="conjunto_a" name="conjunto_a"
-                   placeholder="Ejemplo: 1 2 3 4 5"
-                   value="<?= htmlspecialchars($entradaA) ?>" required>
 
-            <label for="conjunto_b">Conjunto B:</label>
-            <input type="text" id="conjunto_b" name="conjunto_b"
-                   placeholder="Ejemplo: 4 5 6 7"
-                   value="<?= htmlspecialchars($entradaB) ?>" required>
+        <form action="index.php" method="post">
+            <label for="cantidadA">Elementos del conjunto A (1 a 10):</label>
+            <input type="number" id="cantidadA" name="cantidadA" min="1" max="10" value="<?php if ($cantidadA > 0) { echo $cantidadA; } ?>" required>
 
-            <button type="submit">Calcular</button>
+            <label for="cantidadB">Elementos del conjunto B (1 a 10):</label>
+            <input type="number" id="cantidadB" name="cantidadB" min="1" max="10" value="<?php if ($cantidadB > 0) { echo $cantidadB; } ?>" required>
+
+            <button type="submit">Continuar</button>
         </form>
 
-        <?php if ($error !== ''): ?>
-            <div class="error"><?= $error ?></div>
-        <?php endif; ?>
+        <?php
+        if ($error !== '') {
+            echo '<div class="error">' . $error . '</div>';
+        }
 
-        <?php if ($conjuntos !== null): ?>
-            <div class="resultado">
-                A = <strong><?= mostrar($conjuntos->getA()) ?></strong><br>
-                B = <strong><?= mostrar($conjuntos->getB()) ?></strong><br><br>
-                Unión (A ∪ B): <strong><?= mostrar($conjuntos->union()) ?></strong><br>
-                Intersección (A ∩ B): <strong><?= mostrar($conjuntos->interseccion()) ?></strong><br>
-                Diferencia (A − B): <strong><?= mostrar($conjuntos->aMenosB()) ?></strong><br>
-                Diferencia (B − A): <strong><?= mostrar($conjuntos->bMenosA()) ?></strong>
-            </div>
-        <?php endif; ?>
+        if ($mostrarCampos) {
+        ?>
+            <form action="index.php" method="post">
+                <input type="hidden" name="cantidadA" value="<?php echo $cantidadA; ?>">
+                <input type="hidden" name="cantidadB" value="<?php echo $cantidadB; ?>">
+
+                <h2>Conjunto A</h2>
+                <?php for ($i = 0; $i < $cantidadA; $i++) { ?>
+                    <label for="a<?php echo $i; ?>">Elemento <?php echo $i + 1; ?>:</label>
+                    <input type="number" step="1" id="a<?php echo $i; ?>" name="a<?php echo $i; ?>" required>
+                <?php } ?>
+
+                <h2>Conjunto B</h2>
+                <?php for ($i = 0; $i < $cantidadB; $i++) { ?>
+                    <label for="b<?php echo $i; ?>">Elemento <?php echo $i + 1; ?>:</label>
+                    <input type="number" step="1" id="b<?php echo $i; ?>" name="b<?php echo $i; ?>" required>
+                <?php } ?>
+
+                <button type="submit">Calcular</button>
+            </form>
+        <?php
+        }
+
+        if ($calculado) {
+            echo '<div class="resultado">';
+            echo 'A = <strong>' . mostrar($conjuntos->getA()) . '</strong><br>';
+            echo 'B = <strong>' . mostrar($conjuntos->getB()) . '</strong><br><br>';
+            echo 'Unión (A ∪ B): <strong>' . mostrar($conjuntos->union()) . '</strong><br>';
+            echo 'Intersección (A ∩ B): <strong>' . mostrar($conjuntos->interseccion()) . '</strong><br>';
+            echo 'Diferencia (A − B): <strong>' . mostrar($conjuntos->aMenosB()) . '</strong><br>';
+            echo 'Diferencia (B − A): <strong>' . mostrar($conjuntos->bMenosA()) . '</strong>';
+            echo '</div>';
+        }
+        ?>
     </main>
 </body>
 </html>
