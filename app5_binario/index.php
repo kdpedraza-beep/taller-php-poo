@@ -4,17 +4,21 @@ require_once 'Binario.php';
 
 $menu = new Menu();
 $entrada = '';
-$resultado = null;
+$resultado = '';
 $error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $entrada = trim($_POST['numero'] ?? '');
-    $numero = filter_var($entrada, FILTER_VALIDATE_INT);
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['numero'])) {
+        $entrada = $_POST['numero'];
+    }
 
-    if ($numero === false) {
-        $error = 'Ingrese un número entero válido.';
+    if ($entrada === '') {
+        $error = 'Ingrese un número.';
+    } else if ($entrada != (int) $entrada) {
+        $error = 'Ingrese un número entero, sin decimales.';
     } else {
-        $resultado = (new Binario($numero))->convertir();
+        $binario = new Binario((int) $entrada);
+        $resultado = $binario->convertir();
     }
 }
 ?>
@@ -27,24 +31,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../css/estilos.css">
 </head>
 <body>
-    <?= $menu->render('../') ?>
+    <?php echo $menu->render('../'); ?>
     <main>
         <h1>Convertir un número entero a binario</h1>
-        <form method="post">
+        <form action="index.php" method="post">
             <label for="numero">Número entero:</label>
-            <input type="text" id="numero" name="numero" value="<?= htmlspecialchars($entrada) ?>" required>
+            <input type="number" id="numero" name="numero" step="1" value="<?php echo htmlspecialchars($entrada); ?>" required>
             <button type="submit">Convertir</button>
         </form>
 
-        <?php if ($error !== ''): ?>
-            <div class="error"><?= $error ?></div>
-        <?php endif; ?>
-
-        <?php if ($resultado !== null): ?>
-            <div class="resultado">
-                Binario: <strong><?= $resultado ?></strong>
-            </div>
-        <?php endif; ?>
+        <?php
+        if ($error !== '') {
+            echo '<div class="error">' . $error . '</div>';
+        }
+        if ($resultado !== '') {
+            echo '<div class="resultado">Binario: <strong>' . $resultado . '</strong></div>';
+        }
+        ?>
     </main>
 </body>
 </html>

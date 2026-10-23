@@ -10,18 +10,25 @@ class Binario
 
     public function convertir(): string
     {
-        if ($this->numero === 0) {
+        
+        if ($this->numero == 0) {
             return '0';
         }
 
-        $n = abs($this->numero);
-        $binario = '';
-
-        while ($n > 0) {
-            $binario = ($n % 2) . $binario;
-            $n = intdiv($n, 2);
+        
+        $n = $this->numero;
+        if ($n < 0) {
+            $n = $n * -1;
         }
 
+        $binario = '';
+        while ($n > 0) {
+            $residuo = $n % 2;
+            $binario = $residuo . $binario;   // el residuo nuevo va al inicio
+            $n = (int) ($n / 2);              // se queda solo con la parte entera
+        }
+
+        // Si el número era negativo, se agrega el signo
         if ($this->numero < 0) {
             $binario = '-' . $binario;
         }
