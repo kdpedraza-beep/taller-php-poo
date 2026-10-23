@@ -8,48 +8,84 @@ class Estadistica
         $this->numeros = $numeros;
     }
 
-    
+    // Promedio
     public function promedio(): float
     {
-        return array_sum($this->numeros) / count($this->numeros);
+        $suma = 0;
+        foreach ($this->numeros as $numero) {
+            $suma = $suma + $numero;
+        }
+        return $suma / count($this->numeros);
     }
 
-    
+    // Mediana: el valor del centro de los números ordenados
     public function mediana(): float
     {
-        $ordenados = $this->numeros;
-        sort($ordenados);
+        // Se ordena una copia de los números (método de la burbuja)
+        $orden = $this->numeros;
+        $total = count($orden);
 
-        $total = count($ordenados);
-        $mitad = intdiv($total, 2);
-
-        if ($total % 2 === 1) {
-            return $ordenados[$mitad];
+        for ($i = 0; $i < $total - 1; $i++) {
+            for ($j = 0; $j < $total - 1 - $i; $j++) {
+                if ($orden[$j] > $orden[$j + 1]) {
+                    $auxiliar = $orden[$j];
+                    $orden[$j] = $orden[$j + 1];
+                    $orden[$j + 1] = $auxiliar;
+                }
+            }
         }
-        return ($ordenados[$mitad - 1] + $ordenados[$mitad]) / 2;
+
+        $mitad = (int) ($total / 2);
+        if ($total % 2 == 1) {
+            return $orden[$mitad];
+        }
+        return ($orden[$mitad - 1] + $orden[$mitad]) / 2;
     }
 
-    
+    // Moda:
     public function moda(): array
     {
-        $conteo = [];
-        foreach ($this->numeros as $numero) {
-            $clave = (string) $numero;
-            if (!isset($conteo[$clave])) {
-                $conteo[$clave] = 0;
+        $total = count($this->numeros);
+        $mayor = 0;
+
+        // 1) Se busca cuántas veces se repite el que más se repite
+        for ($i = 0; $i < $total; $i++) {
+            $veces = 0;
+            for ($j = 0; $j < $total; $j++) {
+                if ($this->numeros[$i] == $this->numeros[$j]) {
+                    $veces++;
+                }
             }
-            $conteo[$clave]++;
+            if ($veces > $mayor) {
+                $mayor = $veces;
+            }
         }
 
-        $maximo = max($conteo);
-        if ($maximo === 1) {
+        // Si ninguno se repite, no hay moda
+        if ($mayor == 1) {
             return [];
         }
 
+        //  Se guardan los números que se repiten esa cantidad de veces, sin duplicarlos
         $moda = [];
-        foreach ($conteo as $valor => $veces) {
-            if ($veces === $maximo) {
-                $moda[] = $valor;
+        for ($i = 0; $i < $total; $i++) {
+            $veces = 0;
+            for ($j = 0; $j < $total; $j++) {
+                if ($this->numeros[$i] == $this->numeros[$j]) {
+                    $veces++;
+                }
+            }
+
+            if ($veces == $mayor) {
+                $yaEsta = false;
+                foreach ($moda as $valor) {
+                    if ($valor == $this->numeros[$i]) {
+                        $yaEsta = true;
+                    }
+                }
+                if (!$yaEsta) {
+                    $moda[] = $this->numeros[$i];
+                }
             }
         }
         return $moda;
