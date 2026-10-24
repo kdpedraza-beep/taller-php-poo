@@ -8,7 +8,7 @@ class Acronimo
         $this->frase = $frase;
     }
 
-    // Devuelve true si la letra es un signo de puntuación
+   
     private function esSigno(string $letra): bool
     {
         switch ($letra) {
@@ -30,22 +30,35 @@ class Acronimo
         }
     }
 
+    
+    private function mayuscula(string $letra): string
+    {
+        $minusculas = ['á', 'é', 'í', 'ó', 'ú', 'ü', 'ñ'];
+        $mayusculas = ['Á', 'É', 'Í', 'Ó', 'Ú', 'Ü', 'Ñ'];
+
+        for ($i = 0; $i < count($minusculas); $i++) {
+            if ($letra == $minusculas[$i]) {
+                return $mayusculas[$i];
+            }
+        }
+        return strtoupper($letra);
+    }
+
     public function generar(): string
     {
         $acronimo = '';
-        $nuevaPalabra = true; 
-        $total = mb_strlen($this->frase);
+        $nuevaPalabra = true;
 
-        for ($i = 0; $i < $total; $i++) {
-            $letra = mb_substr($this->frase, $i, 1);
+        // Separa la frase en letras 
+        $letras = preg_split('//u', $this->frase, -1, PREG_SPLIT_NO_EMPTY);
 
+        foreach ($letras as $letra) {
             if ($letra == ' ' || $letra == '-') {
-                
                 $nuevaPalabra = true;
             } else if ($this->esSigno($letra)) {
                 // Los demás signos se ignoran
             } else if ($nuevaPalabra) {
-                $acronimo = $acronimo . mb_strtoupper($letra);
+                $acronimo = $acronimo . $this->mayuscula($letra);
                 $nuevaPalabra = false;
             }
         }
