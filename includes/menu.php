@@ -4,7 +4,7 @@ class Menu
     private array $opciones = [
         'app1_acronimo'            => 'Acrónimo',
         'app2_fibonacci_factorial' => 'Fibonacci / Factorial',
-        'app3_estadistica'         => 'Promedio, media y moda',
+        'app3_estadistica'         => 'Promedio, mediana y moda',
         'app4_conjuntos'           => 'Conjuntos',
         'app5_binario'             => 'Decimal a binario',
         'app6_arbol_binario'       => 'Árbol binario',
@@ -20,9 +20,9 @@ class Menu
         }
         return $html . '</ul></nav>';
     }
-        public function getOpciones(): array
+
+    public function getOpciones(): array
     {
         return $this->opciones;
     }
 }
-
