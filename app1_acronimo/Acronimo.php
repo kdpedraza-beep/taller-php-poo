@@ -8,29 +8,13 @@ class Acronimo
         $this->frase = $frase;
     }
 
-   
+    // Es signo todo lo que no sea una letra ni un número
     private function esSigno(string $letra): bool
     {
-        switch ($letra) {
-            case '.':
-            case ',':
-            case ';':
-            case ':':
-            case '!':
-            case '?':
-            case '¡':
-            case '¿':
-            case "'":
-            case '"':
-            case '(':
-            case ')':
-                return true;
-            default:
-                return false;
-        }
+        return !preg_match('/[\p{L}\p{N}]/u', $letra);
     }
 
-    
+    // Pasa a mayúscula una letra 
     private function mayuscula(string $letra): string
     {
         $minusculas = ['á', 'é', 'í', 'ó', 'ú', 'ü', 'ñ'];
