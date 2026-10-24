@@ -12,7 +12,7 @@ $historial = [];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
-  
+    // empieza vacío
     if (isset($_POST['historial']) && is_array($_POST['historial'])) {
         $historial = $_POST['historial'];
     }
@@ -45,9 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $resultado = $calculadora->multiplicar();
                     $linea = $a . ' × ' . $b;
                     break;
-                default:
+                case 'division':
                     $resultado = $calculadora->dividir();
                     $linea = $a . ' ÷ ' . $b;
+                    break;
+                default:
+                    $resultado = $calculadora->porcentaje();
+                    $linea = $a . ' % de ' . $b;
                     break;
             }
 
@@ -80,13 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <option value="resta" <?php if ($operacion == 'resta') { echo 'selected'; } ?>>Resta (-)</option>
                 <option value="multiplicacion" <?php if ($operacion == 'multiplicacion') { echo 'selected'; } ?>>Multiplicación (×)</option>
                 <option value="division" <?php if ($operacion == 'division') { echo 'selected'; } ?>>División (÷)</option>
+                <option value="porcentaje" <?php if ($operacion == 'porcentaje') { echo 'selected'; } ?>>Porcentaje (A % de B)</option>
             </select>
 
             <label for="b">Segundo número:</label>
             <input type="number" step="any" id="b" name="b" value="<?php echo htmlspecialchars($b); ?>" required>
 
             <?php
-         
+            // Cada operación anterior viaja en un campo oculto
             foreach ($historial as $linea) {
                 echo '<input type="hidden" name="historial[]" value="' . htmlspecialchars($linea) . '">';
             }
@@ -116,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
             echo '</ul>';
 
-        
+            // Este formulario no envía el historial, por eso al usarlo queda vacío
             echo '<form action="index.php" method="post">';
             echo '<button type="submit" name="accion" value="borrar">Borrar historial</button>';
             echo '</form>';
